@@ -12,12 +12,6 @@
 .DS_Store
 
 # terraform
-/.terraform/
-/terraform.tfstate*
-/build/
-/.crash.log
-
-# python
-.python_history
-.pyc
-.pyo
+.terraform/
+terraform.tfstate*
+.crash.log

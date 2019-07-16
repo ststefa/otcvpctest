@@ -1,9 +1,54 @@
-provider "openstack" {
-  domain_name = "tsch_rz_t_001"
-  tenant_name = "eu-ch_splunk"
-  cloud       = "otc-sbb-t"
-  auth_url    = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
-}
+/*
+
+We use VPCs to organize the network. A VPC conists of the VPC itself, implicit
+networks (i.e. created by the webgui "under the hood") and explicit subnets.
+This makes network names unusable (i.e. non-unique):
+
+$ openstack --os-cloud otc-sbb-t network list
++--------------------------------------+--------------------------------------+--------------------------------------+
+| ID                                   | Name                                 | Subnets                              |
++--------------------------------------+--------------------------------------+--------------------------------------+
+| 0c7192a0-b7a0-498a-a317-c788a27f71be | d7eb20f7-a98d-4616-95f9-d89ef6b0a114 | 8f4f6547-4152-4d4a-bb49-cd3ef855b098 |
+| 25081612-36c2-4ea5-ad1f-ece095f9be8e | d7eb20f7-a98d-4616-95f9-d89ef6b0a114 | d5b8fc09-a066-419b-80a9-a22b1f71a0bc |
+| 8b0e7640-8b67-4c8e-9934-bf46c2a987f6 | d7eb20f7-a98d-4616-95f9-d89ef6b0a114 | f132f729-1f9a-40ea-aefc-aa2d87163e28 |
+| b6930a97-17d2-435c-8610-694a41451ab5 | d7eb20f7-a98d-4616-95f9-d89ef6b0a114 | b3eb7367-0db3-42b6-a062-676e57b3face |
+| 0a2228f2-7f8a-45f1-8e09-9039e1d09975 | admin_external_net                   |                                      |
++--------------------------------------+--------------------------------------+--------------------------------------+
+
+However we need to reference the network in several places like e.g. the ECS
+network config. It is unreadable to reference them by id. We could reference
+by cidr but that's also confusing. Therefor we rename them in analogy to the
+subnets to make them easier to reference:
+
+$ openstack --os-cloud otc-sbb-t subnet list
++--------------------------------------+---------------------+--------------------------------------+-------------------+
+| ID                                   | Name                | Network                              | Subnet            |
++--------------------------------------+---------------------+--------------------------------------+-------------------+
+| 8f4f6547-4152-4d4a-bb49-cd3ef855b098 | splunk-subnet-az1-2 | 0c7192a0-b7a0-498a-a317-c788a27f71be | 10.104.198.224/28 |
+| b3eb7367-0db3-42b6-a062-676e57b3face | splunk-subnet-az2-1 | b6930a97-17d2-435c-8610-694a41451ab5 | 10.104.198.208/28 |
+| d5b8fc09-a066-419b-80a9-a22b1f71a0bc | splunk-subnet-az1-1 | 25081612-36c2-4ea5-ad1f-ece095f9be8e | 10.104.198.192/28 |
+| f132f729-1f9a-40ea-aefc-aa2d87163e28 | splunk-subnet-az2-2 | 8b0e7640-8b67-4c8e-9934-bf46c2a987f6 | 10.104.198.240/28 |
++--------------------------------------+---------------------+--------------------------------------+-------------------+
+
+$ openstack --os-cloud otc-sbb-t network set --name splunk-net-az1-1 25081612-36c2-4ea5-ad1f-ece095f9be8e
+$ openstack --os-cloud otc-sbb-t network set --name splunk-net-az2-1 b6930a97-17d2-435c-8610-694a41451ab5
+$ openstack --os-cloud otc-sbb-t network set --name splunk-net-az1-2 0c7192a0-b7a0-498a-a317-c788a27f71be
+$ openstack --os-cloud otc-sbb-t network set --name splunk-net-az2-2 8b0e7640-8b67-4c8e-9934-bf46c2a987f6
+
+$ openstack --os-cloud otc-sbb-t network list
++--------------------------------------+--------------------+--------------------------------------+
+| ID                                   | Name               | Subnets                              |
++--------------------------------------+--------------------+--------------------------------------+
+| 0c7192a0-b7a0-498a-a317-c788a27f71be | splunk-net-az1-2   | 8f4f6547-4152-4d4a-bb49-cd3ef855b098 |
+| 25081612-36c2-4ea5-ad1f-ece095f9be8e | splunk-net-az1-1   | d5b8fc09-a066-419b-80a9-a22b1f71a0bc |
+| 8b0e7640-8b67-4c8e-9934-bf46c2a987f6 | splunk-net-az2-2   | f132f729-1f9a-40ea-aefc-aa2d87163e28 |
+| b6930a97-17d2-435c-8610-694a41451ab5 | splunk-net-az2-1   | b3eb7367-0db3-42b6-a062-676e57b3face |
+| 0a2228f2-7f8a-45f1-8e09-9039e1d09975 | admin_external_net |                                      |
++--------------------------------------+--------------------+--------------------------------------+
+
+We can now refer to the networks by name (e.g. "splunk-net-az1-1"
+
+*/
 
 provider "opentelekomcloud" {
   domain_name = "tsch_rz_t_001"
@@ -20,138 +65,76 @@ provider "opentelekomcloud" {
   #delegated_project = "splunk"
 }
 
-provider "opentelekomcloud" {
-  alias = "root"
-  domain_name = "tsch_rz_t_001"
-  tenant_name = "eu-ch"
-  user_name   = "ssteine2-admin"
-  password    = "R{DaM$h3bJBN7CPxDK"
-  auth_url = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
-}
-
-
 locals {
   description = "Will be prefixed to object names"
-  project     = "vpctest"
+  project     = "um-vpctest"
 }
 
-# Error: Error creating OpenStack identity client: No suitable endpoint could be found in the service catalog.
-#data "opentelekomcloud_identity_project_v3" "prj" {
-#  name = "splunk"
+data "opentelekomcloud_vpc_v1" "vpc" {
+  name = "splunk-vpc"
+}
+
+data "opentelekomcloud_networking_network_v2" "net-az1" {
+  name = "splunk-net-az1-1"
+  #network_id = "25081612-36c2-4ea5-ad1f-ece095f9be8e"
+  #matching_subnet_cidr = "10.104.198.192/28"
+}
+
+#data "opentelekomcloud_networking_network_v2" "net-az2" {
+#  name = "splunk-subnet-az2-1"
 #}
 
-data "openstack_compute_availability_zones_v2" "zones" {
+data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
+  vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
+  name = "splunk-subnet-az1-1"
 }
 
-data "openstack_networking_network_v2" "extnet" {
-  name = "admin_external_net"
-}
+#data "opentelekomcloud_vpc_subnet_ids_v1" "subnet_ids" {
+#  vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
+#}
 
-resource "openstack_compute_instance_v2" "provtest" {
-  availability_zone = "eu-ch-01"
-  flavor_name       = "s2.medium.4"
-  name              = "${local.project}-vm"
-  key_pair          = openstack_compute_keypair_v2.keypair.id
+#resource "opentelekomcloud_networking_router_interface_v2" "router-interface-az1" {
+#  router_id = data.opentelekomcloud_vpc_v1.vpc.id
+#  subnet_id = data.opentelekomcloud_vpc_subnet_v1.subnet_az1.id
+#}
+
+resource "opentelekomcloud_compute_instance_v2" "instance" {
+  name            = "${local.project}-vm"
   image_name        = "Standard_CentOS_7_latest"
+  flavor_name       = "s2.medium.4"
+  key_pair          = opentelekomcloud_compute_keypair_v2.keypair.id
+  security_groups = [opentelekomcloud_compute_secgroup_v2.secgrp.name]
+  # has no effect
+  #admin_pass = "mypass"
+  stop_before_destroy = true
+  auto_recovery = true
 
-  security_groups = [openstack_compute_secgroup_v2.secgrp.name]
+  #tag = {
+  #  stage = "spielwiese"
+  #}
 
-  network {
-    uuid = opentelekomcloud_vpc_subnet_v1.subnet-az1.id
+  block_device {
+    #uuid                  = "f74ced3c-a07f-482a-9527-3f7b63aaaf9d" # Enterprise_RedHat_7_latest
+    uuid                  = "bf85b8b3-6778-42e3-b124-9538465e2a53" # Standard_CentOS_7_latest
+    source_type           = "image"
+    volume_size           = 20
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+    volume_type = "SSD" # SSD|SAS
   }
 
+  network {
+    #name = "splunk-subnet-az1-1"
+    uuid = data.opentelekomcloud_networking_network_v2.net-az1.id
+    fixed_ip_v4 = "10.104.198.194"
+    access_network = true
+  }
 }
 
-# Error: Your query returned no results. Please change your search criteria and try again.
-data "opentelekomcloud_vpc_v1" "vpc_hub" {
-  provider = "opentelekomcloud.root"
-  name   = "TSCH_RZ_T_HUB"
-  #region = "eu-ch"
-}
 
-resource "opentelekomcloud_vpc_v1" "vpc" {
-  cidr   = "10.104.199.64/26"
-  name   = "${local.project}-vpc"
-  #region = "eu-ch"
-}
 
-resource "opentelekomcloud_vpc_peering_connection_v2" "vpc_peering" {
-  name        = "${opentelekomcloud_vpc_v1.vpc.name}-peering"
-  vpc_id      = opentelekomcloud_vpc_v1.vpc.id
-  peer_tenant_id = "b836871e5ec04d1b8edcef60c49b9bb6" # tsch_rz_t_001
-  #peer_vpc_id = "${data.opentelekomcloud_vpc_v1.vpc_hub.id}"
-  #peer_vpc_id = "a410c562-4103-4e87-ae61-186a2e1be52c" #TSCH_RZ_P_HUB_01
-  peer_vpc_id = "${data.opentelekomcloud_vpc_v1.vpc_hub.id}" # "c13d2fa9-aa8f-4cab-94b0-634093d1d791"
-}
-
-resource "opentelekomcloud_vpc_peering_connection_accepter_v2" "accepter" {
-  provider = "opentelekomcloud.root"
-  vpc_peering_connection_id = opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id
-  accept = true
-}
-
-# reverse direction, fails
-#resource "opentelekomcloud_vpc_peering_connection_v2" "vpc_peering" {
-#  provider = "opentelekomcloud.root"
-#  name        = "${opentelekomcloud_vpc_v1.vpc.name}-peering"
-#  vpc_id      = "${data.opentelekomcloud_vpc_v1.vpc_hub.id}"
-#  #peer_vpc_id = "${data.opentelekomcloud_vpc_v1.vpc_hub.id}"
-#  #peer_vpc_id = "a410c562-4103-4e87-ae61-186a2e1be52c" #TSCH_RZ_P_HUB_01
-#  peer_vpc_id = "${opentelekomcloud_vpc_v1.vpc.id}"
-#}
-#
-#resource "opentelekomcloud_vpc_peering_connection_accepter_v2" "accepter" {
-#  vpc_peering_connection_id = opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id
-#  accept = true
-#}
-
-resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_local" {
-  #region      = "eu-ch"
-  type        = "peering"
-  nexthop     = "${opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id}"
-  destination = "0.0.0.0/0"
-  vpc_id      = opentelekomcloud_vpc_v1.vpc.id
-  depends_on = [opentelekomcloud_vpc_peering_connection_accepter_v2.accepter]
-}
-
-resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_peer" {
-  provider = "opentelekomcloud.root"
-  #region      = "eu-ch"
-  type        = "peering"
-  nexthop     = "${opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id}"
-  destination = "10.104.199.64/26"
-  vpc_id      = data.opentelekomcloud_vpc_v1.vpc_hub.id
-  depends_on = [opentelekomcloud_vpc_peering_connection_accepter_v2.accepter]
-}
-
-resource "opentelekomcloud_vpc_subnet_v1" "subnet-az1" {
-  name              = "${local.project}-subnet-az1"
-  #region            = "eu-ch"
-  cidr              = "10.104.199.64/27"
-  gateway_ip        = "10.104.199.65"
-  vpc_id            = opentelekomcloud_vpc_v1.vpc.id
-  availability_zone = "eu-ch-01"
-  primary_dns       = "100.125.4.25"
-  secondary_dns     = "100.125.0.43"
-}
-
-resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
-  name              = "${local.project}-subnet-az2"
-  #region            = "eu-ch"
-  cidr              = "10.104.199.96/27"
-  gateway_ip        = "10.104.199.97"
-  vpc_id            = opentelekomcloud_vpc_v1.vpc.id
-  availability_zone = "eu-ch-02"
-  primary_dns       = "100.125.4.25"
-  secondary_dns     = "100.125.0.43"
-}
-
-#resource "opentelekomcloud_networking_router_v2" "router" {
-#  name             = "${local.project}-router"
-#  external_gateway = data.openstack_networking_network_v2.extnet.id
-#}
-
-resource "openstack_compute_secgroup_v2" "secgrp" {
+resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
   name        = "${local.project}-secgrp"
   description = "${local.project} Security Group"
 
@@ -170,17 +153,17 @@ resource "openstack_compute_secgroup_v2" "secgrp" {
   }
 }
 
-resource "openstack_compute_keypair_v2" "keypair" {
+resource "opentelekomcloud_compute_keypair_v2" "keypair" {
   name       = "${local.project}-key"
   public_key = file("~/keys/tsch-appl_rsa.pub")
 }
 
 output "ip-address" {
   description = "list of ipv4 addresses of all servers"
-  value       = openstack_compute_instance_v2.provtest.access_ip_v4
+  value       = opentelekomcloud_compute_instance_v2.instance.access_ip_v4
 }
 
 output "id" {
   description = "ID of server"
-  value       = openstack_compute_instance_v2.provtest.id
+  value       = opentelekomcloud_compute_instance_v2.instance.id
 }

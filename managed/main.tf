@@ -47,7 +47,7 @@ data "openstack_networking_network_v2" "extnet" {
   name = "admin_external_net"
 }
 
-resource "openstack_compute_instance_v2" "provtest" {
+resource "openstack_compute_instance_v2" "instance" {
   availability_zone = "eu-ch-01"
   flavor_name       = "s2.medium.4"
   name              = "${local.project}-vm"

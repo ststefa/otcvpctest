@@ -59,8 +59,8 @@ provider "opentelekomcloud" {
   tenant_name = "eu-ch_splunk"
   #user_name   = "ssteine2"
   #password    = "4w8puELDteCC"
-  user_name   = "ssteine2-admin"
-  password    = "R{DaM$h3bJBN7CPxDK"
+  #user_name   = "ssteine2-admin"
+  #password    = "R{DaM$h3bJBN7CPxDK"
   auth_url = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
   #delegated_project = "splunk"
 }

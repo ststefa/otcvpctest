@@ -69,8 +69,7 @@ resource "opentelekomcloud_vpc_peering_connection_accepter_v2" "accepter" {
 #  accept = true
 #}
 
-resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_local" {
-  #region      = "eu-ch"
+resource "opentelekomcloud_vpc_route_v2" "route_local" {
   type        = "peering"
   nexthop     = "${opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id}"
   destination = "0.0.0.0/0"
@@ -78,9 +77,8 @@ resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_local" {
   depends_on  = [opentelekomcloud_vpc_peering_connection_accepter_v2.accepter]
 }
 
-resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_peer" {
+resource "opentelekomcloud_vpc_route_v2" "route_peer" {
   provider = "opentelekomcloud.root"
-  #region      = "eu-ch"
   type        = "peering"
   nexthop     = "${opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id}"
   destination = "10.104.199.64/26"
@@ -90,7 +88,6 @@ resource "opentelekomcloud_vpc_route_v2" "vpc_peering_route_peer" {
 
 resource "opentelekomcloud_vpc_subnet_v1" "subnet-az1" {
   name = "${local.project}-subnet-az1"
-  #region            = "eu-ch"
   cidr              = "10.104.199.64/27"
   gateway_ip        = "10.104.199.65"
   vpc_id            = opentelekomcloud_vpc_v1.vpc.id
@@ -101,7 +98,6 @@ resource "opentelekomcloud_vpc_subnet_v1" "subnet-az1" {
 
 resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
   name = "${local.project}-subnet-az2"
-  #region            = "eu-ch"
   cidr              = "10.104.199.96/27"
   gateway_ip        = "10.104.199.97"
   vpc_id            = opentelekomcloud_vpc_v1.vpc.id

@@ -46,7 +46,7 @@ $ openstack --os-cloud otc-sbb-t network list
 | 0a2228f2-7f8a-45f1-8e09-9039e1d09975 | admin_external_net |                                      |
 +--------------------------------------+--------------------+--------------------------------------+
 
-We can now refer to the networks by name (e.g. "splunk-net-az1-1"
+We can now refer to the networks by name (e.g. name="splunk-net-az1-1")
 
 */
 

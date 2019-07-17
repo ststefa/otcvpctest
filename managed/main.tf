@@ -1,8 +1,11 @@
+variable "username" {}
+variable "password" {}
+
 provider "opentelekomcloud" {
   domain_name = "tsch_rz_t_001"
   tenant_name = "eu-ch_splunk"
-  user_name   = "john"
-  password    = "*****"
+  user_name   = var.username
+  password    = var.password
   auth_url    = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
 }
 
@@ -10,8 +13,8 @@ provider "opentelekomcloud" {
   alias       = "root"
   domain_name = "tsch_rz_t_001"
   tenant_name = "eu-ch"
-  user_name   = "john"
-  password    = "*****"
+  user_name   = var.username
+  password    = var.password
   auth_url    = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
 }
 
@@ -20,32 +23,9 @@ locals {
   project     = "vpctest"
 }
 
-data "openstack_compute_availability_zones_v2" "zones" {
-}
-
-data "openstack_networking_network_v2" "extnet" {
-  name = "admin_external_net"
-}
-
-resource "opentelekomcloud_compute_instance_v2" "instance" {
-  name        = "${local.project}-vm"
-  flavor_name = "s2.medium.4"
-  key_pair    = opentelekomcloud_compute_keypair_v2.keypair.id
-  security_groups = [
-  opentelekomcloud_compute_secgroup_v2.secgrp.name]
-  stop_before_destroy = true
-  auto_recovery       = true
-
-  block_device {
-    image_name            = "Standard_CentOS_7_latest"
-    source_type           = "image"
-    volume_size           = 20
-    boot_index            = 0
-    destination_type      = "volume"
-    delete_on_termination = true
-    volume_type           = "SAS"
-    # SSD|SAS
-  }
+data "opentelekomcloud_images_image_v2" "osimage" {
+  name        = "Standard_CentOS_7_latest"
+  most_recent = true
 }
 
 data "opentelekomcloud_vpc_v1" "vpc_hub" {
@@ -127,6 +107,15 @@ resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
   secondary_dns     = "100.125.0.43"
 }
 
+data "opentelekomcloud_networking_network_v2" "net-az1" {
+  # TODO: Isn't there a better way to refer to a vpc network?
+  matching_subnet_cidr = "10.104.199.64/27"
+}
+
+data "opentelekomcloud_networking_network_v2" "net-az2" {
+  matching_subnet_cidr = "10.104.199.96/27"
+}
+
 resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
   name        = "${local.project}-secgrp"
   description = "${local.project} Security Group"
@@ -149,6 +138,30 @@ resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
 resource "opentelekomcloud_compute_keypair_v2" "keypair" {
   name       = "${local.project}-key"
   public_key = file("~/keys/tsch-appl_rsa.pub")
+}
+
+resource "opentelekomcloud_compute_instance_v2" "instance" {
+  name              = "${local.project}-vm"
+  flavor_name       = "s2.medium.4"
+  availability_zone = "eu-ch-01"
+  key_pair          = opentelekomcloud_compute_keypair_v2.keypair.id
+  security_groups = [
+    opentelekomcloud_compute_secgroup_v2.secgrp.name]
+  stop_before_destroy = true
+  auto_recovery       = true
+
+  block_device {
+    uuid                  = data.opentelekomcloud_images_image_v2.osimage.id
+    source_type           = "image"
+    volume_size           = 20
+    boot_index            = 0
+    destination_type      = "volume"
+    delete_on_termination = true
+  }
+
+  network {
+    uuid = data.opentelekomcloud_networking_network_v2.net-az1.id
+  }
 }
 
 output "ip-address" {

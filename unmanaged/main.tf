@@ -52,17 +52,10 @@ We can now refer to the networks by name (e.g. "splunk-net-az1-1"
 
 provider "opentelekomcloud" {
   domain_name = "tsch_rz_t_001"
-  # Error: Unsupported argument. An argument named "cloud" is not expected here.
-  #cloud       = "otc-sbb-t"
-  # Error: Unsupported argument. An argument named "project_name" is not expected here.
-  #project_name = "eu-ch_splunk"
   tenant_name = "eu-ch_splunk"
-  #user_name   = "ssteine2"
-  #password    = "4w8puELDteCC"
-  #user_name   = "ssteine2-admin"
-  #password    = "R{DaM$h3bJBN7CPxDK"
+  user_name   = "john"
+  password    = "*****"
   auth_url = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
-  #delegated_project = "splunk"
 }
 
 locals {
@@ -76,63 +69,46 @@ data "opentelekomcloud_vpc_v1" "vpc" {
 
 data "opentelekomcloud_networking_network_v2" "net-az1" {
   name = "splunk-net-az1-1"
-  #network_id = "25081612-36c2-4ea5-ad1f-ece095f9be8e"
-  #matching_subnet_cidr = "10.104.198.192/28"
 }
 
-#data "opentelekomcloud_networking_network_v2" "net-az2" {
-#  name = "splunk-subnet-az2-1"
-#}
+data "opentelekomcloud_networking_network_v2" "net-az2" {
+  name = "splunk-subnet-az2-1"
+}
 
 data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
   vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
   name = "splunk-subnet-az1-1"
 }
 
-#data "opentelekomcloud_vpc_subnet_ids_v1" "subnet_ids" {
-#  vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
-#}
-
-#resource "opentelekomcloud_networking_router_interface_v2" "router-interface-az1" {
-#  router_id = data.opentelekomcloud_vpc_v1.vpc.id
-#  subnet_id = data.opentelekomcloud_vpc_subnet_v1.subnet_az1.id
-#}
+data "opentelekomcloud_vpc_subnet_v1" "subnet_az2" {
+  vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
+  name = "splunk-subnet-az1-2"
+}
 
 resource "opentelekomcloud_compute_instance_v2" "instance" {
   name            = "${local.project}-vm"
-  image_name        = "Standard_CentOS_7_latest"
   flavor_name       = "s2.medium.4"
   key_pair          = opentelekomcloud_compute_keypair_v2.keypair.id
   security_groups = [opentelekomcloud_compute_secgroup_v2.secgrp.name]
-  # has no effect
-  #admin_pass = "mypass"
   stop_before_destroy = true
   auto_recovery = true
 
-  #tag = {
-  #  stage = "spielwiese"
-  #}
-
   block_device {
-    #uuid                  = "f74ced3c-a07f-482a-9527-3f7b63aaaf9d" # Enterprise_RedHat_7_latest
-    uuid                  = "bf85b8b3-6778-42e3-b124-9538465e2a53" # Standard_CentOS_7_latest
+    image_name            = "Standard_CentOS_7_latest"
     source_type           = "image"
     volume_size           = 20
     boot_index            = 0
     destination_type      = "volume"
     delete_on_termination = true
-    volume_type = "SSD" # SSD|SAS
+    volume_type = "SAS" # SSD|SAS
   }
 
   network {
-    #name = "splunk-subnet-az1-1"
     uuid = data.opentelekomcloud_networking_network_v2.net-az1.id
     fixed_ip_v4 = "10.104.198.194"
     access_network = true
   }
 }
-
-
 
 resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
   name        = "${local.project}-secgrp"

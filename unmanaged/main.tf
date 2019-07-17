@@ -55,7 +55,7 @@ provider "opentelekomcloud" {
   tenant_name = "eu-ch_splunk"
   user_name   = "john"
   password    = "*****"
-  auth_url = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
+  auth_url    = "https://iam.eu-ch.o13bb.otc.t-systems.com/v3"
 }
 
 locals {
@@ -77,21 +77,21 @@ data "opentelekomcloud_networking_network_v2" "net-az2" {
 
 data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
   vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
-  name = "splunk-subnet-az1-1"
+  name   = "splunk-subnet-az1-1"
 }
 
 data "opentelekomcloud_vpc_subnet_v1" "subnet_az2" {
   vpc_id = data.opentelekomcloud_vpc_v1.vpc.id
-  name = "splunk-subnet-az1-2"
+  name   = "splunk-subnet-az1-2"
 }
 
 resource "opentelekomcloud_compute_instance_v2" "instance" {
-  name            = "${local.project}-vm"
-  flavor_name       = "s2.medium.4"
-  key_pair          = opentelekomcloud_compute_keypair_v2.keypair.id
-  security_groups = [opentelekomcloud_compute_secgroup_v2.secgrp.name]
+  name                = "${local.project}-vm"
+  flavor_name         = "s2.medium.4"
+  key_pair            = opentelekomcloud_compute_keypair_v2.keypair.id
+  security_groups     = [opentelekomcloud_compute_secgroup_v2.secgrp.name]
   stop_before_destroy = true
-  auto_recovery = true
+  auto_recovery       = true
 
   block_device {
     image_name            = "Standard_CentOS_7_latest"
@@ -100,12 +100,12 @@ resource "opentelekomcloud_compute_instance_v2" "instance" {
     boot_index            = 0
     destination_type      = "volume"
     delete_on_termination = true
-    volume_type = "SAS" # SSD|SAS
+    volume_type           = "SAS" # SSD|SAS
   }
 
   network {
-    uuid = data.opentelekomcloud_networking_network_v2.net-az1.id
-    fixed_ip_v4 = "10.104.198.194"
+    uuid           = data.opentelekomcloud_networking_network_v2.net-az1.id
+    fixed_ip_v4    = "10.104.198.194"
     access_network = true
   }
 }

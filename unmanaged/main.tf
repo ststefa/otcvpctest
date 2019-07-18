@@ -142,7 +142,7 @@ resource "opentelekomcloud_compute_instance_v2" "instance" {
 }
 
 output "ip-address" {
-  description = "list of ipv4 addresses of all servers"
+  description = "ip of server"
   value       = opentelekomcloud_compute_instance_v2.instance.access_ip_v4
 }
 

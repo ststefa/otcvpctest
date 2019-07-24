@@ -119,6 +119,13 @@ resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
   }
 
   rule {
+    from_port   = 80
+    to_port     = 80
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+
+  rule {
     from_port   = -1
     to_port     = -1
     ip_protocol = "icmp"
@@ -160,12 +167,3 @@ resource "opentelekomcloud_compute_instance_v2" "instance" {
   }
 }
 
-output "ip-address" {
-  description = "ip of server"
-  value       = opentelekomcloud_compute_instance_v2.instance.access_ip_v4
-}
-
-output "id" {
-  description = "ID of server"
-  value       = opentelekomcloud_compute_instance_v2.instance.id
-}

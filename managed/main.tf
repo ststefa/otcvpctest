@@ -20,11 +20,6 @@ locals {
   project     = "vpctest"
 }
 
-data "opentelekomcloud_images_image_v2" "osimage" {
-  name        = "Standard_CentOS_7_latest"
-  most_recent = true
-}
-
 data "opentelekomcloud_vpc_v1" "vpc_hub" {
   provider = "opentelekomcloud.root"
   name     = "TSCH_RZ_T_HUB"
@@ -72,7 +67,7 @@ resource "opentelekomcloud_vpc_route_v2" "route_local" {
 }
 
 resource "opentelekomcloud_vpc_route_v2" "route_peer" {
-  provider = "opentelekomcloud.root"
+  provider    = "opentelekomcloud.root"
   type        = "peering"
   nexthop     = "${opentelekomcloud_vpc_peering_connection_v2.vpc_peering.id}"
   destination = "10.104.199.64/26"
@@ -81,7 +76,7 @@ resource "opentelekomcloud_vpc_route_v2" "route_peer" {
 }
 
 resource "opentelekomcloud_vpc_subnet_v1" "subnet-az1" {
-  name = "${local.project}-subnet-az1"
+  name              = "${local.project}-subnet-az1"
   cidr              = "10.104.199.64/27"
   gateway_ip        = "10.104.199.65"
   vpc_id            = opentelekomcloud_vpc_v1.vpc.id
@@ -91,7 +86,7 @@ resource "opentelekomcloud_vpc_subnet_v1" "subnet-az1" {
 }
 
 resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
-  name = "${local.project}-subnet-az2"
+  name              = "${local.project}-subnet-az2"
   cidr              = "10.104.199.96/27"
   gateway_ip        = "10.104.199.97"
   vpc_id            = opentelekomcloud_vpc_v1.vpc.id
@@ -100,15 +95,16 @@ resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
   secondary_dns     = "100.125.0.43"
 }
 
+
 data "opentelekomcloud_networking_network_v2" "net-az1" {
-  # TODO: Isn't there a better way to refer to a vpc network?
   matching_subnet_cidr = "10.104.199.64/27"
-  depends_on = [opentelekomcloud_vpc_subnet_v1.subnet-az1]
+  # The dependency (although correct) leads to VM recreation on every apply
+  #depends_on           = [opentelekomcloud_vpc_subnet_v1.subnet-az1]
 }
 
 data "opentelekomcloud_networking_network_v2" "net-az2" {
   matching_subnet_cidr = "10.104.199.96/27"
-  depends_on = [opentelekomcloud_vpc_subnet_v1.subnet-az2]
+  #depends_on           = [opentelekomcloud_vpc_subnet_v1.subnet-az2]
 }
 
 resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
@@ -135,13 +131,18 @@ resource "opentelekomcloud_compute_keypair_v2" "keypair" {
   public_key = file("~/keys/tsch-appl_rsa.pub")
 }
 
+data "opentelekomcloud_images_image_v2" "osimage" {
+  name        = "Standard_CentOS_7_latest"
+  most_recent = true
+}
+
 resource "opentelekomcloud_compute_instance_v2" "instance" {
   name              = "${local.project}-vm"
   flavor_name       = "s2.medium.4"
   availability_zone = "eu-ch-01"
   key_pair          = opentelekomcloud_compute_keypair_v2.keypair.id
   security_groups = [
-    opentelekomcloud_compute_secgroup_v2.secgrp.name]
+  opentelekomcloud_compute_secgroup_v2.secgrp.name]
   stop_before_destroy = true
   auto_recovery       = true
 

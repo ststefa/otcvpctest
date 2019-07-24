@@ -11,15 +11,17 @@ locals {
   project     = "um-vpctest"
 }
 
-data "opentelekomcloud_images_image_v2" "osimage" {
-  name        = "Standard_CentOS_7_latest"
-  most_recent = true
-}
-
 data "opentelekomcloud_vpc_v1" "vpc" {
   name = "vpctest-vpc"
 }
 
+data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
+  name = "vpctest-subnet-az1"
+}
+
+data "opentelekomcloud_vpc_subnet_v1" "subnet_az2" {
+  name = "vpctest-subnet-az2"
+}
 data "opentelekomcloud_networking_network_v2" "net-az1" {
   matching_subnet_cidr = "10.104.199.64/27"
 }
@@ -28,13 +30,6 @@ data "opentelekomcloud_networking_network_v2" "net-az2" {
   matching_subnet_cidr = "10.104.199.96/27"
 }
 
-data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
-  name   = "vpctest-subnet-az1"
-}
-
-data "opentelekomcloud_vpc_subnet_v1" "subnet_az2" {
-  name   = "vpctest-subnet-az2"
-}
 
 resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {
   name        = "${local.project}-secgrp"
@@ -60,6 +55,11 @@ resource "opentelekomcloud_compute_keypair_v2" "keypair" {
   public_key = file("~/keys/tsch-appl_rsa.pub")
 }
 
+data "opentelekomcloud_images_image_v2" "osimage" {
+  name        = "Standard_CentOS_7_latest"
+  most_recent = true
+}
+
 resource "opentelekomcloud_compute_instance_v2" "instance" {
   name                = "${local.project}-vm"
   flavor_name         = "s2.medium.4"
@@ -79,7 +79,7 @@ resource "opentelekomcloud_compute_instance_v2" "instance" {
   }
 
   network {
-    uuid           = data.opentelekomcloud_networking_network_v2.net-az2.id
+    uuid = data.opentelekomcloud_networking_network_v2.net-az2.id
   }
 }
 

@@ -22,7 +22,7 @@ locals {
 
 data "opentelekomcloud_vpc_v1" "vpc_hub" {
   provider = "opentelekomcloud.root"
-  name     = "tsch_rz_t_hub"
+  name     = "TSCH_RZ_T_HUB"  # case sensitive!
 }
 
 resource "opentelekomcloud_vpc_v1" "vpc" {

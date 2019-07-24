@@ -17,12 +17,12 @@ provider "opentelekomcloud" {
 
 locals {
   description = "Will be prefixed to object names"
-  project     = "vpctest"
+  project     = "mg-vpctest"
 }
 
 data "opentelekomcloud_vpc_v1" "vpc_hub" {
   provider = "opentelekomcloud.root"
-  name     = "TSCH_RZ_T_HUB"
+  name     = "tsch_rz_t_hub"
 }
 
 resource "opentelekomcloud_vpc_v1" "vpc" {

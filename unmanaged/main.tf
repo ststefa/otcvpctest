@@ -1,9 +1,3 @@
-# credentials can be provided using shell variables
-#   export TF_VAR_username=john
-#   export TF_VAR_password=secret
-variable "username" {}
-variable "password" {}
-
 provider "opentelekomcloud" {
   domain_name = "tsch_rz_t_001"
   tenant_name = "eu-ch_splunk"

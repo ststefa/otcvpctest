@@ -1,9 +1,3 @@
-# credentials can be provided using shell variables
-#   export TF_VAR_username=john
-#   export TF_VAR_password=secret
-variable "username" {}
-variable "password" {}
-
 provider "opentelekomcloud" {
   domain_name = "tsch_rz_t_001"
   tenant_name = "eu-ch_splunk"
@@ -109,10 +103,12 @@ resource "opentelekomcloud_vpc_subnet_v1" "subnet-az2" {
 data "opentelekomcloud_networking_network_v2" "net-az1" {
   # TODO: Isn't there a better way to refer to a vpc network?
   matching_subnet_cidr = "10.104.199.64/27"
+  depends_on = [opentelekomcloud_vpc_subnet_v1.subnet-az1]
 }
 
 data "opentelekomcloud_networking_network_v2" "net-az2" {
   matching_subnet_cidr = "10.104.199.96/27"
+  depends_on = [opentelekomcloud_vpc_subnet_v1.subnet-az2]
 }
 
 resource "opentelekomcloud_compute_secgroup_v2" "secgrp" {

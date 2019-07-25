@@ -12,15 +12,15 @@ locals {
 }
 
 data "opentelekomcloud_vpc_v1" "vpc" {
-  name = "vpctest-vpc"
+  name = "mg-vpctest-vpc"
 }
 
 data "opentelekomcloud_vpc_subnet_v1" "subnet_az1" {
-  name = "vpctest-subnet-az1"
+  name = "mg-vpctest-subnet-az1"
 }
 
 data "opentelekomcloud_vpc_subnet_v1" "subnet_az2" {
-  name = "vpctest-subnet-az2"
+  name = "mg-vpctest-subnet-az2"
 }
 data "opentelekomcloud_networking_network_v2" "net-az1" {
   matching_subnet_cidr = "10.104.199.64/27"
